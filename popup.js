@@ -8,11 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { value: '中文', label: '中文' },
     { value: 'English', label: 'English' },
     { value: '日本語', label: '日本語' },
-    { value: '한국어', label: '한국어' },
-    { value: 'Français', label: 'Français' },
-    { value: 'Deutsch', label: 'Deutsch' },
-    { value: 'Español', label: 'Español' },
-    { value: 'Русский', label: 'Русский' }
+    { value: '한국어', label: '한국어' }
   ];
 
   // API 协议选项
