@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* Global scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+    body {
+      width: 460px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header p { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+    .content { padding: 16px; }
+    .config-bar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    /* Custom config dropdown */
+    .config-dropdown {
+      flex: 1;
+      position: relative;
+    }
+    .config-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 12px;
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .config-dropdown-trigger:hover {
+      border-color: #c7d2fe;
+      background: #fafbff;
+    }
+    .config-dropdown.open .config-dropdown-trigger {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+    }
+    .config-dropdown-icon {
+      display: none;
+    }
+    .config-dropdown-label {
+      flex: 1;
+      min-width: 0;
+    }
+    .config-dropdown-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .config-dropdown-arrow {
+      color: #94a3b8;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+      width: 14px;
+      height: 14px;
+    }
+    .config-dropdown.open .config-dropdown-arrow {
+      transform: rotate(180deg);
+      color: #6366f1;
+    }
+
+    /* Dropdown panel */
+    .config-dropdown-panel {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+      z-index: 50;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      overflow: hidden;
+    }
+    .config-dropdown.open .config-dropdown-panel {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .config-dropdown-list {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .config-dropdown-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .config-dropdown-list::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 2px;
+    }
+    .config-dropdown-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .config-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    .config-dropdown-item:hover {
+      background: #f1f5f9;
+    }
+    .config-dropdown-item.active {
+      background: #eef2ff;
+    }
+    .config-dropdown-item-icon {
+      display: none;
+    }
+    .config-dropdown-item-label {
+      flex: 1;
+      min-width: 0;
+    }
+    .config-dropdown-item-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .config-dropdown-item.active .config-dropdown-item-name {
+      color: #4f46e5;
+      font-weight: 600;
+    }
+    .config-dropdown-item-check {
+      color: #6366f1;
+      opacity: 0;
+      flex-shrink: 0;
+    }
+    .config-dropdown-item.active .config-dropdown-item-check {
+      opacity: 1;
+    }
+
+    /* Compact select dropdown for form fields */
+    .select-dropdown {
+      position: relative;
+    }
+    .select-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .select-dropdown-trigger:hover {
+      border-color: #c7d2fe;
+      background: #fafbff;
+    }
+    .select-dropdown.open .select-dropdown-trigger {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+    }
+    .select-dropdown-value {
+      flex: 1;
+      font-size: 13px;
+      color: #1e293b;
+    }
+    .select-dropdown-arrow {
+      color: #94a3b8;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .select-dropdown.open .select-dropdown-arrow {
+      transform: rotate(180deg);
+      color: #6366f1;
+    }
+    .select-dropdown-panel {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      overflow: hidden;
+    }
+    .select-dropdown.open .select-dropdown-panel {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .select-dropdown-list {
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .select-dropdown-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .select-dropdown-list::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 2px;
+    }
+    .select-dropdown-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .select-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    .select-dropdown-item:hover {
+      background: #f1f5f9;
+    }
+    .select-dropdown-item.active {
+      background: #eef2ff;
+    }
+    .select-dropdown-item-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+    }
+    .select-dropdown-item.active .select-dropdown-item-name {
+      color: #4f46e5;
+      font-weight: 600;
+    }
+    .select-dropdown-item-check {
+      color: #6366f1;
+      opacity: 0;
+      flex-shrink: 0;
+    }
+    .select-dropdown-item.active .select-dropdown-item-check {
+      opacity: 1;
+    }
+
+    /* Stagger animation for dropdown items */
+    .config-dropdown.open .config-dropdown-item {
+      animation: item-reveal 0.2s ease backwards;
+    }
+    .config-dropdown.open .config-dropdown-item:nth-child(1) { animation-delay: 0ms; }
+    .config-dropdown.open .config-dropdown-item:nth-child(2) { animation-delay: 20ms; }
+    .config-dropdown.open .config-dropdown-item:nth-child(3) { animation-delay: 40ms; }
+    .config-dropdown.open .config-dropdown-item:nth-child(4) { animation-delay: 60ms; }
+    .config-dropdown.open .config-dropdown-item:nth-child(5) { animation-delay: 80ms; }
+    .config-dropdown.open .config-dropdown-item:nth-child(6) { animation-delay: 100ms; }
+
+    @keyframes item-reveal {
+      from {
+        opacity: 0;
+        transform: translateX(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .config-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .config-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: white;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .config-btn:hover { border-color: #667eea; color: #667eea; }
+    .config-btn.danger:hover { border-color: #ef4444; color: #ef4444; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+      color: #1e293b;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .input-with-toggle {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-with-toggle input {
+      width: 100%;
+      padding-right: 36px;
+    }
+    .input-toggle-btn {
+      position: absolute;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .input-toggle-btn:hover {
+      color: #6366f1;
+    }
+    .input-with-refresh {
+      position: relative;
+    }
+    .form-group-model {
+      position: relative;
+    }
+    .input-with-refresh input {
+      width: 100%;
+      padding-right: 32px;
+    }
+    .input-refresh-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: color 0.2s;
+      border-radius: 4px;
+      z-index: 2;
+    }
+    .input-refresh-btn:hover {
+      color: #6366f1;
+    }
+    .input-refresh-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .input-refresh-btn.loading svg {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .models-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      z-index: 60;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .models-dropdown.show {
+      display: block;
+    }
+    .models-dropdown-list {
+      padding: 4px;
+    }
+    .models-dropdown-item {
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #334155;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.1s;
+    }
+    .models-dropdown-item:hover {
+      background: #f1f5f9;
+    }
+    .models-dropdown-empty {
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    .form-group-model { flex: 2 !important; }
+    .form-group-lang { flex: 0 0 auto !important; min-width: 100px; max-width: 130px; }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #testInput {
+      margin-bottom: 8px;
+    }
+    .btn-test {
+      width: 100%;
+      padding: 8px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-test:hover { border-color: #667eea; color: #667eea; }
+    .btn-test:disabled { opacity: 0.6; cursor: not-allowed; }
+    .test-result {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .test-result-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .test-result-body {
+      font-size: 13px;
+      color: #1e293b;
+      word-break: break-word;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .test-result-body.error {
+      color: #dc2626;
+    }
+    .request-params {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .request-params-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .request-params-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      background: white;
+      color: #64748b;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+    .request-params-body {
+      font-size: 11px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 160px;
+      overflow-y: auto;
+      line-height: 1.4;
+    }
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #1e293b;
+      color: white;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1);
+      opacity: 0;
+      transform: translateY(-12px) scale(0.95);
+      animation: toast-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      pointer-events: auto;
+    }
+    .toast.hiding {
+      animation: toast-out 0.2s ease forwards;
+    }
+    .toast.success {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    }
+    .toast.error {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    }
+    .toast-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .toast-message {
+      flex: 1;
+    }
+    @keyframes toast-in {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    @keyframes toast-out {
+      to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+      }
+    }
+
+    .io-buttons { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-io {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      color: #64748b;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-io:hover { border-color: #667eea; color: #667eea; }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 320px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    .modal h3 { font-size: 16px; margin-bottom: 12px; color: #1e293b; }
+    .modal input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .modal input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .modal-actions { display: flex; gap: 8px; }
+    .modal-actions button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-cancel { background: #f1f5f9; color: #64748b; }
+    .modal-cancel:hover { background: #e2e8f0; }
+    .modal-confirm {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .modal-confirm:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AI 划词翻译</h1>
+    <p>选中文本即可触发翻译 · 支持句子与段落</p>
+  </div>
+
+  <div class="content">
+    <div class="config-bar">
+      <div class="config-dropdown" id="configDropdown">
+        <div class="config-dropdown-trigger">
+          <div class="config-dropdown-name" id="dropdownName">默认配置</div>
+          <svg class="config-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="config-dropdown-panel">
+          <div class="config-dropdown-list" id="configDropdownList"></div>
+        </div>
+      </div>
+      <div class="config-actions">
+        <button class="config-btn" id="newConfigBtn" title="新建配置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button class="config-btn danger" id="deleteConfigBtn" title="删除配置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>配置名称</label>
+        <input type="text" id="configName" placeholder="例如：工作、学习">
+      </div>
+      <div class="form-group">
+        <label>API 协议</label>
+        <div class="select-dropdown" id="providerDropdown">
+          <div class="select-dropdown-trigger">
+            <span class="select-dropdown-value" id="providerValue">OpenAI 兼容</span>
+            <svg class="select-dropdown-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="select-dropdown-panel">
+            <div class="select-dropdown-list" id="providerDropdownList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>API Endpoint</label>
+      <input type="text" id="baseUrl" placeholder="https://api.openai.com/v1">
+    </div>
+
+    <div class="form-group">
+      <label>API Key</label>
+      <div class="input-with-toggle">
+        <input type="password" id="apiKey" placeholder="sk-...">
+        <button class="input-toggle-btn" id="toggleApiKey" title="显示/隐藏">
+          <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group form-group-model">
+        <label>模型</label>
+        <div class="input-with-refresh">
+          <input type="text" id="model" placeholder="gpt-3.5-turbo">
+          <button class="input-refresh-btn" id="fetchModelsBtn" title="获取模型列表">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="models-dropdown" id="modelsDropdown">
+          <div class="models-dropdown-list" id="modelsDropdownList"></div>
+        </div>
+      </div>
+      <div class="form-group form-group-lang">
+        <label>目标语言</label>
+        <div class="select-dropdown" id="langDropdown">
+          <div class="select-dropdown-trigger">
+            <span class="select-dropdown-value" id="langValue">中文</span>
+            <svg class="select-dropdown-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="select-dropdown-panel">
+            <div class="select-dropdown-list" id="langDropdownList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>测试内容</label>
+      <input type="text" id="testInput" placeholder="输入测试文本，留空使用默认">
+      <button class="btn btn-test" id="testBtn">测试</button>
+      <div class="test-result" id="testResult" style="display:none">
+        <div class="test-result-header">响应结果</div>
+        <div class="test-result-body" id="testResultBody"></div>
+        <div class="request-params" id="requestParams" style="display:none">
+          <div class="request-params-header">
+            <span class="request-params-title">请求参数</span>
+            <button class="copy-btn" id="copyRequestBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              复制
+            </button>
+          </div>
+          <div class="request-params-body" id="requestParamsBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="io-buttons">
+      <button class="btn btn-io" id="exportBtn">导出配置</button>
+      <button class="btn btn-io" id="importBtn">导入配置</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- 新建配置弹窗 -->
+  <div class="modal-overlay" id="newConfigModal">
+    <div class="modal">
+      <h3>新建配置</h3>
+      <input type="text" id="newConfigName" placeholder="配置名称">
+      <div class="modal-actions">
+        <button class="modal-cancel" id="cancelNewConfig">取消</button>
+        <button class="modal-confirm" id="confirmNewConfig">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
