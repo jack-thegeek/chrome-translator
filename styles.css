@@ -263,3 +263,169 @@
     color: #fca5a5;
   }
 }
+
+/* 必应词典结果样式 */
+.ai-translator-popup .bing-result,
+#ai-translator-popup .bing-result {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+#ai-translator-popup .bing-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+#ai-translator-popup .bing-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+#ai-translator-popup .bing-phonetics {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#ai-translator-popup .bing-phon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #4b5563;
+}
+#ai-translator-popup .bing-phon-lang {
+  font-style: italic;
+  color: #6b7280;
+}
+#ai-translator-popup .bing-audio {
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 20px;
+  display: inline-block;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0;
+  flex-shrink: 0;
+}
+#ai-translator-popup .bing-audio:hover {
+  background: #2563eb;
+}
+#ai-translator-popup .bing-defs {
+  margin-bottom: 8px;
+}
+#ai-translator-popup .bing-def {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+}
+#ai-translator-popup .bing-pos {
+  flex-shrink: 0;
+  min-width: 40px;
+  font-style: italic;
+  color: #2563eb;
+  font-size: 13px;
+}
+#ai-translator-popup .bing-def-text {
+  color: #111827;
+}
+#ai-translator-popup .bing-infs {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+#ai-translator-popup .bing-infs-label {
+  font-weight: 600;
+  color: #4b5563;
+}
+#ai-translator-popup .bing-sentences {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+}
+#ai-translator-popup .bing-sentence {
+  padding: 6px 0;
+  font-size: 13px;
+}
+#ai-translator-popup .bing-sen-en {
+  color: #1f2937;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#ai-translator-popup .bing-sen-cn {
+  color: #6b7280;
+  font-size: 12px;
+}
+#ai-translator-popup .bing-mt {
+  color: #111827;
+  padding: 4px 0;
+}
+#ai-translator-popup .bing-related-group {
+  margin-bottom: 8px;
+}
+#ai-translator-popup .bing-related-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+#ai-translator-popup .bing-related-item {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  text-decoration: none;
+  color: inherit;
+}
+#ai-translator-popup .bing-related-item:hover {
+  background: #f9fafb;
+}
+#ai-translator-popup .bing-related-word {
+  font-weight: 600;
+  color: #1e3a8a;
+  min-width: 80px;
+}
+#ai-translator-popup .bing-related-def {
+  color: #4b5563;
+}
+#ai-translator-popup .bing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 12px;
+}
+#ai-translator-popup .bing-footer a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+#ai-translator-popup .bing-footer a:hover {
+  text-decoration: underline;
+}
+#ai-translator-popup .bing-ai-fallback {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+#ai-translator-popup .bing-ai-fallback:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}

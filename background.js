@@ -6,7 +6,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
+  if (request.type === 'bingDict') {
+    fetchBingDictHtml(request.text)
+      .then(html => sendResponse({ success: true, html }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
 });
+
+// 必应词典查询（参照 crimx/ext-saladict bing engine）
+const BING_DICT_LINK =
+  'https://cn.bing.com/dict/clientsearch?mkt=zh-CN&setLang=zh&form=BDVEHC&ClientVer=BDDTV3.5.1.4320&q=';
+
+async function fetchBingDictHtml(text) {
+  const word = text.replace(/\s+/g, ' ').trim();
+  const url = BING_DICT_LINK + encodeURIComponent(word);
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+      }
+    });
+  } catch (err) {
+    throw new Error(`必应词典网络错误: ${err.message}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`必应词典 HTTP ${response.status}`);
+  }
+
+  return await response.text();
+}
 
 async function translateText(text, config) {
   const { apiKey, baseUrl, model, targetLang } = config;

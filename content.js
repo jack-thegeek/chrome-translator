@@ -236,8 +236,197 @@
     }
   }
 
+  // 单个英文单词检测（参照 saladict bing dict 适用场景）
+  function isSingleEnglishWord(text) {
+    const t = text.trim();
+    if (!t) return false;
+    if (t.length > 50) return false;
+    // 单个词：仅字母、连字符、撇号
+    return /^[a-zA-Z][a-zA-Z'-]*$/.test(t);
+  }
+
   // 发送翻译请求（自动回退）
   function translate(text) {
+    // 单个英文单词优先走必应词典
+    if (isSingleEnglishWord(text)) {
+      translateWithBingDict(text);
+      return;
+    }
+    translateWithAI(text);
+  }
+
+  function decodeHtmlEntities(str) {
+    const ta = document.createElement('textarea');
+    ta.innerHTML = str;
+    return ta.value;
+  }
+
+  function stripTags(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return decodeHtmlEntities(doc.body.innerText || '').trim();
+  }
+
+  function parseBingDictHtml(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const container = doc.getElementById('content_container');
+    if (!container) return null;
+
+    const name = container.getAttribute('name');
+    const hdEl = doc.querySelector('.client_def_hd_hd');
+    const word = hdEl ? hdEl.textContent.trim() : '';
+    if (!word) return null;
+
+    if (name === 'translateresult') {
+      const mtEl = doc.querySelector('.client_trans_head, .client_mt');
+      return { type: 'machine', title: word, mt: mtEl ? stripTags(mtEl.innerHTML) : word };
+    }
+
+    if (name === 'sentenceresult' || name === 'homepage') {
+      return { type: 'related', title: word, defs: [] };
+    }
+
+    const BING_BASE = 'https://cn.bing.com';
+    const toAbs = p => p && !p.startsWith('http') ? BING_BASE + p : p;
+    const phsym = [];
+    doc.querySelectorAll('.client_def_hd_pn').forEach(pn => {
+      const audioEl = pn.parentElement ? pn.parentElement.querySelector('[data-pronunciation]') : null;
+      const pron = audioEl ? toAbs(audioEl.getAttribute('data-pronunciation')) : '';
+      const txt = pn.textContent.trim();
+      const langM = txt.match(/^(?:美国|英国|美|英)/);
+      const ipaM = txt.match(/(\[[^\]]+\])/);
+      phsym.push({ lang: langM ? langM[0] : '', pron: ipaM ? ipaM[1] : '', audio: pron });
+    });
+
+    const cdefMap = {};
+    doc.querySelectorAll('.client_def_bar').forEach(bar => {
+      if (bar.closest('#clienthomoid, #clientcrossid, #clientwebtid')) return;
+      if (bar.querySelector('.client_def_title_web')) return;
+      const posEl = bar.querySelector('.client_def_title, .client_def_title_web');
+      if (!posEl) return;
+      const pos = posEl.textContent.trim();
+      const contentEl = bar.querySelector('.client_def_list_word_content, .client_def_list_word_bar');
+      if (!contentEl) return;
+      let raw = contentEl.textContent.trim();
+      raw = raw.replace(/；\s*$/, '').trim();
+      const defs = raw.split(/；/).map(s => s.trim()).filter(Boolean);
+      if (!cdefMap[pos]) cdefMap[pos] = [];
+      cdefMap[pos].push(...defs);
+    });
+    const cdef = Object.entries(cdefMap).map(([pos, defs]) => ({ pos, def: defs.join('；') }));
+
+    const infs = [];
+    doc.querySelectorAll('.client_word_change_word').forEach(el => {
+      const label = (el.getAttribute('title') || '').trim();
+      const form = el.textContent.trim();
+      if (form && form !== word && label) infs.push({ label, form });
+    });
+
+    const sentences = [];
+    doc.querySelectorAll('#sentenceSeg .client_sentence_list').forEach(item => {
+      const enEl = item.querySelector('.client_sen_en');
+      const cnEl = item.querySelector('.client_sen_cn');
+      const audioEl = item.querySelector('[data-mp3link]');
+      if (!enEl || !cnEl) return;
+      const en = stripTags(enEl.innerHTML).replace(/^["\s]+|["\s]+$/g, '');
+      const chs = stripTags(cnEl.innerHTML);
+      const mp3 = audioEl ? toAbs(audioEl.getAttribute('data-mp3link')) : '';
+      sentences.push({ en, chs, mp3 });
+    });
+
+    return { type: 'lex', title: word, phsym, cdef, infs, sentences };
+  }
+
+  function translateWithBingDict(text) {
+    showLoading('必应词典查询中...');
+    chrome.runtime.sendMessage({
+      type: 'bingDict',
+      text: text
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        showLoading('词典查询失败，切换 AI 翻译...');
+        translateWithAI(text);
+        return;
+      }
+      if (!response.success || !response.html) {
+        translateWithAI(text);
+        return;
+      }
+      const result = parseBingDictHtml(response.html);
+      if (!result) {
+        translateWithAI(text);
+        return;
+      }
+      showBingDictResult(result, text);
+    });
+  }
+
+  // 渲染必应词典结果
+  function showBingDictResult(result, word) {
+    if (!popup) return;
+    const resultEl = popup.querySelector('.ai-translator-result');
+
+    if (result.type === 'lex') {
+      const phonetics = (result.phsym || []).map(p =>
+        `<span class="bing-phon"><span class="bing-phon-lang">${escapeHtml(p.lang)} ${escapeHtml(p.pron)}</span>${p.audio ? `<button class="bing-audio" data-url="${escapeHtml(p.audio)}" title="播放">▶</button>` : ''}</span>`
+      ).join('');
+      const defs = (result.cdef || []).map(d =>
+        `<div class="bing-def"><span class="bing-pos">${escapeHtml(d.pos)}</span><span class="bing-def-text">${escapeHtml(d.def)}</span></div>`
+      ).join('');
+      const infs = result.infs && result.infs.length
+        ? `<div class="bing-infs"><span class="bing-infs-label">变形:</span> ${result.infs.map(i => `<span class="bing-inf">${escapeHtml(i.label)}: ${escapeHtml(i.form)}</span>`).join(' · ')}</div>`
+        : '';
+      const sentences = (result.sentences || []).slice(0, 2).map(s =>
+        `<div class="bing-sentence">
+          <div class="bing-sen-en">${escapeHtml(s.en)}${s.mp3 ? `<button class="bing-audio" data-url="${escapeHtml(s.mp3)}" title="播放">▶</button>` : ''}</div>
+          <div class="bing-sen-cn">${escapeHtml(s.chs)}</div>
+        </div>`
+      ).join('');
+
+      resultEl.innerHTML = `
+        <div class="bing-result">
+          <div class="bing-head">
+            <span class="bing-title">${escapeHtml(result.title || word)}</span>
+            ${phonetics ? `<div class="bing-phonetics">${phonetics}</div>` : ''}
+          </div>
+          ${defs ? `<div class="bing-defs">${defs}</div>` : ''}
+          ${infs}
+          ${sentences ? `<div class="bing-sentences">${sentences}</div>` : ''}
+          <div class="bing-footer">
+            <a href="https://cn.bing.com/dict/search?q=${encodeURIComponent(word)}" target="_blank" rel="noopener">必应词典 ↗</a>
+            <button class="bing-ai-fallback">改用 AI 翻译</button>
+          </div>
+        </div>`;
+    } else if (result.type === 'machine') {
+      resultEl.innerHTML = `<div class="bing-result"><div class="bing-head"><span class="bing-title">${escapeHtml(result.title || word)}</span></div><div class="bing-mt">${escapeHtml(result.mt)}</div><div class="bing-footer"><a href="https://cn.bing.com/dict/search?q=${encodeURIComponent(word)}" target="_blank" rel="noopener">必应词典 ↗</a><button class="bing-ai-fallback">改用 AI 翻译</button></div></div>`;
+    } else if (result.type === 'related') {
+      const defs = (result.defs || []).map(g =>
+        `<div class="bing-related-group"><div class="bing-related-title">${escapeHtml(g.title)}</div>${g.meanings.map(m => `<a class="bing-related-item" href="${escapeHtml(m.href)}" target="_blank" rel="noopener"><span class="bing-related-word">${escapeHtml(m.word)}</span><span class="bing-related-def">${escapeHtml(m.def)}</span></a>`).join('')}</div>`
+      ).join('');
+      resultEl.innerHTML = `<div class="bing-result"><div class="bing-head"><span class="bing-title">未找到「${escapeHtml(word)}」</span></div>${defs}<div class="bing-footer"><button class="bing-ai-fallback">改用 AI 翻译</button></div></div>`;
+    }
+
+    // 绑定音频播放
+    resultEl.querySelectorAll('.bing-audio').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.getAttribute('data-url');
+        if (url) {
+          const audio = new Audio(url);
+          audio.play().catch(() => {});
+        }
+      });
+    });
+    // 绑定 AI 回退
+    const aiBtn = resultEl.querySelector('.bing-ai-fallback');
+    if (aiBtn) {
+      aiBtn.addEventListener('click', () => {
+        resultEl.innerHTML = `<div class="ai-translator-loading"><div class="ai-translator-spinner"></div><span>AI 翻译中...</span></div>`;
+        translateWithAI(word);
+      });
+    }
+  }
+
+  // AI 翻译请求（自动回退）
+  function translateWithAI(text) {
     chrome.storage.local.get(['translatorConfigs', 'activeConfigId'], (result) => {
       const configs = result.translatorConfigs || [];
       const activeConfigId = result.activeConfigId;
