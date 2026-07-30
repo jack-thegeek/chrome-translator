@@ -48,7 +48,7 @@
 }
 
 /* 翻译弹窗 */
-#ai-translator-popup {
+.ai-translator-popup {
   position: absolute;
   z-index: 2147483647;
   width: 380px;
@@ -68,11 +68,11 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-#ai-translator-popup.ai-translator-hiding {
+.ai-translator-popup.ai-translator-hiding {
   animation: ai-translator-out 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-#ai-translator-popup.ai-translator-dragging {
+.ai-translator-popup.ai-translator-dragging {
   transition: none;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.12);
 }
@@ -221,20 +221,20 @@
 }
 
 /* 滚动条样式 */
-#ai-translator-popup ::-webkit-scrollbar {
+.ai-translator-popup ::-webkit-scrollbar {
   width: 4px;
 }
-#ai-translator-popup ::-webkit-scrollbar-thumb {
+.ai-translator-popup ::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 2px;
 }
-#ai-translator-popup ::-webkit-scrollbar-track {
+.ai-translator-popup ::-webkit-scrollbar-track {
   background: transparent;
 }
 
 /* 暗色模式 */
 @media (prefers-color-scheme: dark) {
-  #ai-translator-popup {
+  .ai-translator-popup {
     background: #1f2937;
     border-color: rgba(255, 255, 255, 0.08);
     color: #f3f4f6;
@@ -269,12 +269,12 @@
 
 /* 必应词典结果样式 */
 .ai-translator-popup .bing-result,
-#ai-translator-popup .bing-result {
+.ai-translator-popup .bing-result {
   font-size: 14px;
   line-height: 1.6;
   color: #1f2937;
 }
-#ai-translator-popup .bing-head {
+.ai-translator-popup .bing-head {
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -283,28 +283,28 @@
   margin-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
 }
-#ai-translator-popup .bing-title {
+.ai-translator-popup .bing-title {
   font-size: 20px;
   font-weight: 700;
   color: #1e3a8a;
 }
-#ai-translator-popup .bing-phonetics {
+.ai-translator-popup .bing-phonetics {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
 }
-#ai-translator-popup .bing-phon {
+.ai-translator-popup .bing-phon {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 13px;
   color: #4b5563;
 }
-#ai-translator-popup .bing-phon-lang {
+.ai-translator-popup .bing-phon-lang {
   font-style: italic;
   color: #6b7280;
 }
-#ai-translator-popup .bing-audio {
+.ai-translator-popup .bing-audio {
   border: none;
   background: transparent;
   color: #3b82f6;
@@ -319,24 +319,24 @@
   flex-shrink: 0;
   transition: color 0.15s ease;
 }
-#ai-translator-popup .bing-audio:hover {
+.ai-translator-popup .bing-audio:hover {
   color: #1d4ed8;
   background: transparent;
 }
-#ai-translator-popup .bing-audio svg {
+.ai-translator-popup .bing-audio svg {
   display: inline-block;
   vertical-align: middle;
   width: 16px;
   height: 16px;
 }
-#ai-translator-popup .bing-tabs {
+.ai-translator-popup .bing-tabs {
   display: flex;
   gap: 4px;
   margin-bottom: 6px;
   border-bottom: 1px solid #f3f4f6;
   padding-bottom: 4px;
 }
-#ai-translator-popup .bing-tab {
+.ai-translator-popup .bing-tab {
   border: none;
   background: transparent;
   padding: 3px 8px;
@@ -347,55 +347,55 @@
   border-radius: 4px;
   transition: all 0.15s ease;
 }
-#ai-translator-popup .bing-tab:hover {
+.ai-translator-popup .bing-tab:hover {
   color: #2563eb;
   background: #eff6ff;
 }
-#ai-translator-popup .bing-tab.active {
+.ai-translator-popup .bing-tab.active {
   color: #2563eb;
   background: #dbeafe;
   font-weight: 600;
 }
-#ai-translator-popup .bing-no-def {
+.ai-translator-popup .bing-no-def {
   font-size: 12px;
   color: #9ca3af;
   padding: 4px 0;
   font-style: italic;
 }
-#ai-translator-popup .bing-defs {
+.ai-translator-popup .bing-defs {
   margin-bottom: 8px;
 }
-#ai-translator-popup .bing-def {
+.ai-translator-popup .bing-def {
   display: flex;
   gap: 8px;
   padding: 3px 0;
 }
-#ai-translator-popup .bing-edef-group {
+.ai-translator-popup .bing-edef-group {
   align-items: flex-start;
 }
-#ai-translator-popup .bing-edef-list {
+.ai-translator-popup .bing-edef-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
 }
-#ai-translator-popup .bing-edef-item {
+.ai-translator-popup .bing-edef-item {
   color: #1f2937;
   font-size: 13px;
   line-height: 1.45;
   word-break: break-word;
 }
-#ai-translator-popup .bing-pos {
+.ai-translator-popup .bing-pos {
   flex-shrink: 0;
   min-width: 40px;
   font-style: italic;
   color: #2563eb;
   font-size: 13px;
 }
-#ai-translator-popup .bing-def-text {
+.ai-translator-popup .bing-def-text {
   color: #111827;
 }
-#ai-translator-popup .bing-infs {
+.ai-translator-popup .bing-infs {
   font-size: 12px;
   color: #6b7280;
   margin-bottom: 8px;
@@ -403,61 +403,61 @@
   background: #f3f4f6;
   border-radius: 4px;
 }
-#ai-translator-popup .bing-infs-label {
+.ai-translator-popup .bing-infs-label {
   font-weight: 600;
   color: #4b5563;
 }
-#ai-translator-popup .bing-sentences {
+.ai-translator-popup .bing-sentences {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed #e5e7eb;
   max-height: 200px;
   overflow-y: auto;
 }
-#ai-translator-popup .bing-sentence {
+.ai-translator-popup .bing-sentence {
   padding: 6px 0;
   font-size: 13px;
 }
-#ai-translator-popup .bing-sen-en {
+.ai-translator-popup .bing-sen-en {
   color: #1f2937;
   margin-bottom: 2px;
   line-height: 1.4;
 }
-#ai-translator-popup .bing-sen-cn {
+.ai-translator-popup .bing-sen-cn {
   color: #6b7280;
   font-size: 12px;
 }
-#ai-translator-popup .bing-mt {
+.ai-translator-popup .bing-mt {
   color: #111827;
   padding: 4px 0;
 }
-#ai-translator-popup .bing-related-group {
+.ai-translator-popup .bing-related-group {
   margin-bottom: 8px;
 }
-#ai-translator-popup .bing-related-title {
+.ai-translator-popup .bing-related-title {
   font-weight: 600;
   color: #374151;
   margin-bottom: 4px;
 }
-#ai-translator-popup .bing-related-item {
+.ai-translator-popup .bing-related-item {
   display: flex;
   gap: 8px;
   padding: 3px 0;
   text-decoration: none;
   color: inherit;
 }
-#ai-translator-popup .bing-related-item:hover {
+.ai-translator-popup .bing-related-item:hover {
   background: #f9fafb;
 }
-#ai-translator-popup .bing-related-word {
+.ai-translator-popup .bing-related-word {
   font-weight: 600;
   color: #1e3a8a;
   min-width: 80px;
 }
-#ai-translator-popup .bing-related-def {
+.ai-translator-popup .bing-related-def {
   color: #4b5563;
 }
-#ai-translator-popup .bing-footer {
+.ai-translator-popup .bing-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -466,14 +466,14 @@
   border-top: 1px solid #e5e7eb;
   font-size: 12px;
 }
-#ai-translator-popup .bing-footer a {
+.ai-translator-popup .bing-footer a {
   color: #3b82f6;
   text-decoration: none;
 }
-#ai-translator-popup .bing-footer a:hover {
+.ai-translator-popup .bing-footer a:hover {
   text-decoration: underline;
 }
-#ai-translator-popup .bing-ai-fallback {
+.ai-translator-popup .bing-ai-fallback {
   border: 1px solid #d1d5db;
   background: #fff;
   color: #374151;
@@ -482,7 +482,7 @@
   cursor: pointer;
   font-size: 12px;
 }
-#ai-translator-popup .bing-ai-fallback:hover {
+.ai-translator-popup .bing-ai-fallback:hover {
   background: #f3f4f6;
   border-color: #9ca3af;
 }

@@ -3,10 +3,10 @@
   'use strict';
 
   let triggerBtn = null;
-  let popup = null;
   let selectedText = '';
   let lastSelectionRange = null;
-  let isDragging = false;
+  let maxZIndex = 2147483640;
+  let activeDragPopup = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
 
@@ -42,15 +42,18 @@
 
       if (!selectedText) return;
 
+      const textToTranslate = selectedText;
+      const targetRange = lastSelectionRange;
+
       // 隐藏触发按钮
       hideTriggerButton();
 
-      // 显示翻译弹窗
-      createPopup();
-      positionPopup(lastSelectionRange);
+      // 显示新翻译弹窗实例
+      const popupEl = createPopup(targetRange);
+      positionPopup(popupEl, targetRange);
 
       // 开始翻译
-      translate(selectedText);
+      translate(textToTranslate, popupEl, targetRange);
     });
 
     return triggerBtn;
@@ -99,13 +102,12 @@
   const COPY_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
   const CHECK_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
-  // 创建翻译弹窗
-  function createPopup() {
-    if (popup) popup.remove();
-
-    popup = document.createElement('div');
-    popup.id = 'ai-translator-popup';
-    popup.innerHTML = `
+  // 创建翻译弹窗实例
+  function createPopup(targetRange) {
+    const popupEl = document.createElement('div');
+    popupEl.className = 'ai-translator-popup';
+    popupEl.style.zIndex = ++maxZIndex;
+    popupEl.innerHTML = `
       <div class="ai-translator-header">
         <span class="ai-translator-title">AI 翻译</span>
         <div class="ai-translator-actions">
@@ -128,14 +130,19 @@
       </div>
     `;
 
-    document.body.appendChild(popup);
+    document.body.appendChild(popupEl);
+
+    // 点击该弹窗自动提升至最前面
+    popupEl.addEventListener('mousedown', () => {
+      popupEl.style.zIndex = ++maxZIndex;
+    });
 
     // 复制按钮
-    popup.querySelector('.ai-translator-copy').addEventListener('click', () => {
-      const result = popup.querySelector('.ai-translator-result').textContent;
+    popupEl.querySelector('.ai-translator-copy').addEventListener('click', () => {
+      const result = popupEl.querySelector('.ai-translator-result').textContent;
       if (!result) return;
       navigator.clipboard.writeText(result).then(() => {
-        const btn = popup.querySelector('.ai-translator-copy');
+        const btn = popupEl.querySelector('.ai-translator-copy');
         if (!btn) return;
         btn.innerHTML = CHECK_ICON_SVG;
         btn.classList.add('copied');
@@ -150,24 +157,27 @@
       });
     });
 
-    // 关闭按钮 - 唯一关闭方式
-    popup.querySelector('.ai-translator-close').addEventListener('click', hidePopup);
+    // 关闭按钮
+    popupEl.querySelector('.ai-translator-close').addEventListener('click', () => {
+      hidePopup(popupEl);
+    });
 
     // 拖动功能
-    const header = popup.querySelector('.ai-translator-header');
-    header.addEventListener('mousedown', startDrag);
+    const header = popupEl.querySelector('.ai-translator-header');
+    header.addEventListener('mousedown', (e) => startDrag(e, popupEl));
 
-    return popup;
+    return popupEl;
   }
 
   // 开始拖动
-  function startDrag(e) {
+  function startDrag(e, popupEl) {
     if (e.target.closest('.ai-translator-btn')) return; // 点击按钮不触发拖动
 
-    isDragging = true;
-    popup.classList.add('ai-translator-dragging');
+    activeDragPopup = popupEl;
+    popupEl.classList.add('ai-translator-dragging');
+    popupEl.style.zIndex = ++maxZIndex;
 
-    const rect = popup.getBoundingClientRect();
+    const rect = popupEl.getBoundingClientRect();
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
 
@@ -179,7 +189,7 @@
 
   // 拖动中
   document.addEventListener('mousemove', (e) => {
-    if (!isDragging || !popup) return;
+    if (!activeDragPopup) return;
 
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
@@ -188,26 +198,26 @@
     let newTop = e.clientY + scrollY - dragOffsetY;
 
     // 边界限制
-    const rect = popup.getBoundingClientRect();
+    const rect = activeDragPopup.getBoundingClientRect();
     const margin = 10;
     newLeft = Math.max(scrollX + margin, Math.min(newLeft, scrollX + window.innerWidth - rect.width - margin));
     newTop = Math.max(scrollY + margin, Math.min(newTop, scrollY + window.innerHeight - rect.height - margin));
 
-    popup.style.left = newLeft + 'px';
-    popup.style.top = newTop + 'px';
+    activeDragPopup.style.left = newLeft + 'px';
+    activeDragPopup.style.top = newTop + 'px';
   });
 
   // 结束拖动
   document.addEventListener('mouseup', () => {
-    if (isDragging && popup) {
-      isDragging = false;
-      popup.classList.remove('ai-translator-dragging');
+    if (activeDragPopup) {
+      activeDragPopup.classList.remove('ai-translator-dragging');
+      activeDragPopup = null;
     }
   });
 
   // 定位弹窗
-  function positionPopup(range) {
-    if (!popup) return;
+  function positionPopup(popupEl, range) {
+    if (!popupEl || !popupEl.isConnected) return;
 
     const targetRange = range || lastSelectionRange;
     if (!targetRange) return;
@@ -217,8 +227,8 @@
     const scrollY = window.scrollY || window.pageYOffset;
 
     const margin = 12;
-    const popupWidth = popup.offsetWidth || 380;
-    const popupHeight = popup.offsetHeight || 250;
+    const popupWidth = popupEl.offsetWidth || 380;
+    const popupHeight = popupEl.offsetHeight || 250;
 
     // 默认优先定位在选区右侧（与选区顶部齐平）
     let left = rect.right + scrollX + 10;
@@ -249,18 +259,17 @@
       top = scrollY + margin;
     }
 
-    popup.style.left = Math.round(left) + 'px';
-    popup.style.top = Math.round(top) + 'px';
+    popupEl.style.left = Math.round(left) + 'px';
+    popupEl.style.top = Math.round(top) + 'px';
   }
 
-  // 隐藏弹窗
-  function hidePopup() {
-    if (popup) {
-      popup.classList.add('ai-translator-hiding');
+  // 隐藏指定弹窗
+  function hidePopup(popupEl) {
+    if (popupEl && popupEl.isConnected) {
+      popupEl.classList.add('ai-translator-hiding');
       setTimeout(() => {
-        if (popup) {
-          popup.remove();
-          popup = null;
+        if (popupEl && popupEl.isConnected) {
+          popupEl.remove();
         }
       }, 200);
     }
@@ -276,13 +285,13 @@
   }
 
   // 发送翻译请求（自动回退）
-  function translate(text) {
+  function translate(text, popupEl, range) {
     // 单个英文单词优先走必应词典
     if (isSingleEnglishWord(text)) {
-      translateWithBingDict(text);
+      translateWithBingDict(text, popupEl, range);
       return;
     }
-    translateWithAI(text);
+    translateWithAI(text, popupEl, range);
   }
 
   function decodeHtmlEntities(str) {
@@ -411,34 +420,35 @@
     return { type: 'lex', title: word, phsym, cdef, edef, infs, sentences };
   }
 
-  function translateWithBingDict(text) {
-    showLoading('必应词典查询中...');
+  function translateWithBingDict(text, popupEl, range) {
+    showLoading('必应词典查询中...', popupEl);
     chrome.runtime.sendMessage({
       type: 'bingDict',
       text: text
     }, (response) => {
+      if (!popupEl || !popupEl.isConnected) return;
       if (chrome.runtime.lastError) {
-        showLoading('词典查询失败，切换 AI 翻译...');
-        translateWithAI(text);
+        showLoading('词典查询失败，切换 AI 翻译...', popupEl);
+        translateWithAI(text, popupEl, range);
         return;
       }
       if (!response.success || !response.html) {
-        translateWithAI(text);
+        translateWithAI(text, popupEl, range);
         return;
       }
       const result = parseBingDictHtml(response.html);
       if (!result) {
-        translateWithAI(text);
+        translateWithAI(text, popupEl, range);
         return;
       }
-      showBingDictResult(result, text);
+      showBingDictResult(result, text, popupEl, range);
     });
   }
 
   // 渲染必应词典结果
-  function showBingDictResult(result, word) {
-    if (!popup) return;
-    const resultEl = popup.querySelector('.ai-translator-result');
+  function showBingDictResult(result, word, popupEl, range) {
+    if (!popupEl || !popupEl.isConnected) return;
+    const resultEl = popupEl.querySelector('.ai-translator-result');
 
     if (result.type === 'lex') {
       const speakerSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
@@ -520,7 +530,7 @@
           if (cdefEl) cdefEl.style.display = 'none';
           if (edefEl) edefEl.style.display = 'block';
         }
-        requestAnimationFrame(() => positionPopup());
+        requestAnimationFrame(() => positionPopup(popupEl, range));
       });
     });
 
@@ -538,23 +548,24 @@
     const aiBtn = resultEl.querySelector('.bing-ai-fallback');
     if (aiBtn) {
       aiBtn.addEventListener('click', () => {
-        resultEl.innerHTML = `<div class="ai-translator-loading"><div class="ai-translator-spinner"></div><span>AI 翻译中...</span></div>`;
-        translateWithAI(word);
+        showLoading('AI 翻译中...', popupEl);
+        translateWithAI(word, popupEl, range);
       });
     }
 
     // 内容渲染后重新计算位置以适配实际高度
-    requestAnimationFrame(() => positionPopup());
+    requestAnimationFrame(() => positionPopup(popupEl, range));
   }
 
   // AI 翻译请求（自动回退）
-  function translateWithAI(text) {
+  function translateWithAI(text, popupEl, range) {
     chrome.storage.local.get(['translatorConfigs', 'activeConfigId'], (result) => {
+      if (!popupEl || !popupEl.isConnected) return;
       const configs = result.translatorConfigs || [];
       const activeConfigId = result.activeConfigId;
 
       if (configs.length === 0) {
-        showError('没有可用的翻译配置');
+        showError('没有可用的翻译配置', popupEl);
         return;
       }
 
@@ -571,7 +582,7 @@
       const validConfigs = tryOrder.filter(c => c.apiKey);
 
       if (validConfigs.length === 0) {
-        showError('请先在插件设置中配置 API Key');
+        showError('请先在插件设置中配置 API Key', popupEl);
         return;
       }
 
@@ -580,10 +591,11 @@
       const errors = [];
 
       function tryNext() {
+        if (!popupEl || !popupEl.isConnected) return;
         if (attemptIndex >= validConfigs.length) {
           // 所有配置都失败，显示详细错误
           const detail = errors.map(e => `• ${e.name}: ${e.error}`).join('\n');
-          showError(`所有配置请求失败\n${detail}`);
+          showError(`所有配置请求失败\n${detail}`, popupEl);
           return;
         }
 
@@ -591,7 +603,7 @@
         const isFallback = attemptIndex > 0;
 
         if (isFallback) {
-          showLoading(`「${validConfigs[attemptIndex - 1].name}」失败，正在尝试「${config.name}」...`);
+          showLoading(`「${validConfigs[attemptIndex - 1].name}」失败，正在尝试「${config.name}」...`, popupEl);
         }
 
         chrome.runtime.sendMessage({
@@ -599,6 +611,7 @@
           text: text,
           config: config
         }, (response) => {
+          if (!popupEl || !popupEl.isConnected) return;
           if (chrome.runtime.lastError) {
             // 网络错误，尝试下一个
             errors.push({ name: config.name, error: chrome.runtime.lastError.message });
@@ -608,7 +621,7 @@
           }
 
           if (response.success) {
-            showResult(response.result, isFallback ? config.name : null);
+            showResult(response.result, isFallback ? config.name : null, popupEl, range);
           } else {
             // API 错误，尝试下一个
             errors.push({ name: config.name, error: response.error });
@@ -623,21 +636,21 @@
   }
 
   // 显示翻译结果
-  function showResult(result, fallbackName) {
-    if (!popup) return;
+  function showResult(result, fallbackName, popupEl, range) {
+    if (!popupEl || !popupEl.isConnected) return;
 
-    const resultEl = popup.querySelector('.ai-translator-result');
+    const resultEl = popupEl.querySelector('.ai-translator-result');
     const fallbackBadge = fallbackName
       ? `<div class="ai-translator-fallback-badge">由「${escapeHtml(fallbackName)}」翻译</div>`
       : '';
     resultEl.innerHTML = `${fallbackBadge}<div class="ai-translator-text">${escapeHtml(result)}</div>`;
-    requestAnimationFrame(() => positionPopup());
+    requestAnimationFrame(() => positionPopup(popupEl, range));
   }
 
   // 更新加载状态
-  function showLoading(message) {
-    if (!popup) return;
-    const resultEl = popup.querySelector('.ai-translator-result');
+  function showLoading(message, popupEl) {
+    if (!popupEl || !popupEl.isConnected) return;
+    const resultEl = popupEl.querySelector('.ai-translator-result');
     resultEl.innerHTML = `<div class="ai-translator-loading">
       <div class="ai-translator-spinner"></div>
       <span>${escapeHtml(message)}</span>
@@ -645,9 +658,9 @@
   }
 
   // 显示错误
-  function showError(message) {
-    if (!popup) return;
-    const resultEl = popup.querySelector('.ai-translator-result');
+  function showError(message, popupEl) {
+    if (!popupEl || !popupEl.isConnected) return;
+    const resultEl = popupEl.querySelector('.ai-translator-result');
     // 将错误消息格式化，保留换行并高亮关键信息
     const formattedMessage = escapeHtml(message)
       .replace(/\n/g, '<br>')
@@ -690,9 +703,7 @@
 
   // 鼠标释放时显示触发图标
   document.addEventListener('mouseup', (e) => {
-    // 点击弹窗内部不处理
-    if (popup && popup.contains(e.target)) return;
-    // 点击触发按钮不处理
+    // 点击触发按钮本身不处理
     if (triggerBtn && triggerBtn.contains(e.target)) return;
 
     setTimeout(() => {
