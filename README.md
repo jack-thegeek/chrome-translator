@@ -47,6 +47,12 @@
 - 认证: `Authorization: Bearer <API Key>`
 - 默认模型: `gpt-3.5-turbo`
 
+### Google 翻译
+
+- Endpoint: `https://translate.googleapis.com` (可免费直连或自建代理服务)
+- 认证: 无需 API Key
+- 特点: 响应极其迅速，无需配置 API Key，开箱即用
+
 ### Claude API
 
 - Endpoint: `https://api.anthropic.com/v1`

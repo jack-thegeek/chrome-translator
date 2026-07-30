@@ -607,11 +607,11 @@
           tryOrder.unshift(active);
         }
 
-        // 过滤掉没有 apiKey 的配置
-        const validConfigs = tryOrder.filter(c => c.apiKey);
+        // 过滤掉未配置好凭据的协议（Google 翻译不需要 API Key）
+        const validConfigs = tryOrder.filter(c => c.provider === 'google' || Boolean(c.apiKey));
 
         if (validConfigs.length === 0) {
-          showError('请先在插件设置中配置 API Key', popupEl);
+          showError('请先在插件设置中配置有效的 API Key 或添加 Google 翻译协议', popupEl);
           return;
         }
 

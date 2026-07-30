@@ -43,13 +43,63 @@ async function fetchBingDictHtml(text) {
 async function translateText(text, config) {
   const { apiKey, baseUrl, model, targetLang } = config;
   // 自动检测协议：优先使用 provider，否则根据 baseUrl 推断
-  const provider = config.provider || (baseUrl.includes('anthropic') ? 'claude' : 'openai');
+  const provider = config.provider || (baseUrl.includes('google') ? 'google' : (baseUrl.includes('anthropic') ? 'claude' : 'openai'));
   const systemPrompt = `你是一个专业的翻译助手。请将用户输入的文本翻译成${targetLang || '中文'}。只返回翻译结果，不要解释。如果是句子，请保持语句通顺自然。`;
 
+  if (provider === 'google') {
+    return translateWithGoogle(text, config);
+  }
   if (provider === 'claude') {
     return translateWithClaude(text, config, systemPrompt);
   }
   return translateWithOpenAI(text, config, systemPrompt);
+}
+
+async function translateWithGoogle(text, config) {
+  const { baseUrl, targetLang } = config;
+  const langMap = {
+    '中文': 'zh-CN',
+    'English': 'en',
+    '日本語': 'ja',
+    '한국어': 'ko'
+  };
+  const tl = langMap[targetLang] || 'zh-CN';
+  let host = (baseUrl || 'https://translate.googleapis.com').trim().replace(/\/$/, '');
+  if (!host.startsWith('http://') && !host.startsWith('https://')) {
+    host = 'https://' + host;
+  }
+  const url = `${host}/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(text)}`;
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+      }
+    });
+  } catch (err) {
+    throw new Error(`Google 翻译网络错误: ${err.message}\nURL: ${url}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Google 翻译 HTTP ${response.status}\nURL: ${url}`);
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    throw new Error(`Google 翻译响应解析失败\nURL: ${url}`);
+  }
+
+  if (Array.isArray(data) && Array.isArray(data[0])) {
+    const translated = data[0]
+      .filter(item => item && item[0])
+      .map(item => item[0])
+      .join('');
+    if (translated) return translated;
+  }
+  throw new Error('Google 翻译未返回有效的翻译结果');
 }
 
 async function translateWithOpenAI(text, config, systemPrompt) {

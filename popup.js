@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // API 协议选项
   const providers = [
     { value: 'openai', label: 'OpenAI 兼容' },
-    { value: 'claude', label: 'Claude API' }
+    { value: 'claude', label: 'Claude API' },
+    { value: 'google', label: 'Google 翻译' }
   ];
 
   // DOM 元素
@@ -233,6 +234,10 @@ document.addEventListener('DOMContentLoaded', () => {
     providerValue.textContent = providers.find(p => p.value === value)?.label || value;
     renderProviderDropdown();
     closeProviderDropdown();
+    // 自动填充 Google 翻译默认 Endpoint
+    if (value === 'google' && !baseUrlInput.value.trim()) {
+      baseUrlInput.value = 'https://translate.googleapis.com';
+    }
     // 更新 placeholder
     updatePlaceholder();
     // 自动保存
@@ -241,11 +246,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updatePlaceholder() {
-    if (selectedProvider === 'claude') {
+    if (selectedProvider === 'google') {
+      baseUrlInput.placeholder = 'https://translate.googleapis.com';
+      apiKeyInput.placeholder = '(无需 API Key)';
+      modelInput.placeholder = '(无需指定模型)';
+    } else if (selectedProvider === 'claude') {
       baseUrlInput.placeholder = 'https://api.anthropic.com/v1';
+      apiKeyInput.placeholder = 'sk-ant-...';
       modelInput.placeholder = 'claude-3-5-sonnet-20241022';
     } else {
       baseUrlInput.placeholder = 'https://api.openai.com/v1';
+      apiKeyInput.placeholder = 'sk-...';
       modelInput.placeholder = 'gpt-3.5-turbo';
     }
   }
@@ -361,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedProvider = config.provider || 'openai';
     langValue.textContent = selectedLang;
     providerValue.textContent = providers.find(p => p.value === selectedProvider)?.label || 'OpenAI 兼容';
+    updatePlaceholder();
     renderLangDropdown();
     renderProviderDropdown();
   }
@@ -438,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const testText = testInput.value.trim() || '你好';
 
-    if (!config.baseUrl || !config.apiKey) {
+    if (config.provider !== 'google' && (!config.baseUrl || !config.apiKey)) {
       showStatus('请填写 API Endpoint 和 API Key', 'error');
       btn.disabled = false;
       btn.textContent = '测试';
@@ -448,7 +460,22 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       let url, requestOptions, response;
 
-      if (config.provider === 'claude') {
+      if (config.provider === 'google') {
+        let host = (config.baseUrl || 'https://translate.googleapis.com').trim().replace(/\/$/, '');
+        if (!host.startsWith('http://') && !host.startsWith('https://')) {
+          host = 'https://' + host;
+        }
+        const langMap = { '中文': 'zh-CN', 'English': 'en', '日本語': 'ja', '한국어': 'ko' };
+        const tl = langMap[config.targetLang] || 'zh-CN';
+        url = `${host}/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(testText)}`;
+        requestOptions = {
+          method: 'GET',
+          headers: {
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+          }
+        };
+        response = await fetch(url, requestOptions);
+      } else if (config.provider === 'claude') {
         url = `${config.baseUrl.replace(/\/$/, '')}/messages`;
         requestOptions = {
           method: 'POST',
@@ -504,7 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         // 提取响应内容
         let resultText = '';
-        if (config.provider === 'claude') {
+        if (config.provider === 'google') {
+          if (Array.isArray(data) && Array.isArray(data[0])) {
+            resultText = data[0].filter(i => i && i[0]).map(i => i[0]).join('');
+          }
+        } else if (config.provider === 'claude') {
           const textBlock = data?.content?.find(c => c.type === 'text');
           resultText = textBlock?.text?.trim() || '';
         } else {
@@ -645,10 +676,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 多配置格式（带 configs 数组）
         if (data.configs && Array.isArray(data.configs)) {
-          importedConfigs = data.configs.filter(c => c.baseUrl && c.apiKey);
+          importedConfigs = data.configs.filter(c => c.provider === 'google' || (c.baseUrl && c.apiKey));
         }
         // 单配置格式（兼容旧版）
-        else if (data.baseUrl && data.apiKey) {
+        else if (data.provider === 'google' || (data.baseUrl && data.apiKey)) {
           importedConfigs = [data];
         }
 
