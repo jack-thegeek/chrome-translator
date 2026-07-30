@@ -515,6 +515,20 @@
     }
   }
 
+  function highlightSentence(text, targetWord, infs = []) {
+    if (!text) return '';
+    const safeText = escapeHtml(text);
+    const targetForms = [targetWord, ...(infs.map(i => i.form))].filter(Boolean);
+    const safeForms = [...new Set(targetForms)].map(w => escapeHtml(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+    if (safeForms.length === 0) return safeText;
+
+    const pattern = `\\b(?:${safeForms.join('|')})\\w*\\b`;
+    const regex = new RegExp(pattern, 'gi');
+
+    return safeText.replace(regex, '<mark class="bing-hl">$&</mark>');
+  }
+
   // 渲染必应词典结果
   function showBingDictResult(result, word, popupEl, range) {
     if (!popupEl || !popupEl.isConnected) return;
@@ -552,9 +566,10 @@
       const infs = result.infs && result.infs.length
         ? `<div class="bing-infs"><span class="bing-infs-label">变形:</span> ${result.infs.map(i => `<span class="bing-inf">${escapeHtml(i.label)}: ${escapeHtml(i.form)}</span>`).join(' · ')}</div>`
         : '';
+      const targetWord = result.title || word;
       const sentences = (result.sentences || []).map(s =>
         `<div class="bing-sentence">
-          <div class="bing-sen-en">${escapeHtml(s.en)}${s.mp3 ? ` <button class="bing-audio" data-url="${escapeHtml(s.mp3)}" title="播放">${speakerSvg}</button>` : ''}</div>
+          <div class="bing-sen-en">${highlightSentence(s.en, targetWord, result.infs)}${s.mp3 ? ` <button class="bing-audio" data-url="${escapeHtml(s.mp3)}" title="播放">${speakerSvg}</button>` : ''}</div>
           <div class="bing-sen-cn">${escapeHtml(s.chs)}</div>
         </div>`
       ).join('');
