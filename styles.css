@@ -137,7 +137,9 @@
 }
 
 .ai-translator-btn.copied {
-  background: #4ade80;
+  background: #10b981;
+  color: #ffffff;
+  transform: scale(1.08);
 }
 
 .ai-translator-result {

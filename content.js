@@ -96,6 +96,9 @@
     }
   }
 
+  const COPY_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+  const CHECK_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
   // 创建翻译弹窗
   function createPopup() {
     if (popup) popup.remove();
@@ -107,13 +110,10 @@
         <span class="ai-translator-title">AI 翻译</span>
         <div class="ai-translator-actions">
           <button class="ai-translator-btn ai-translator-copy" title="复制结果">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
+            ${COPY_ICON_SVG}
           </button>
           <button class="ai-translator-btn ai-translator-close" title="关闭">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -133,10 +133,20 @@
     // 复制按钮
     popup.querySelector('.ai-translator-copy').addEventListener('click', () => {
       const result = popup.querySelector('.ai-translator-result').textContent;
+      if (!result) return;
       navigator.clipboard.writeText(result).then(() => {
         const btn = popup.querySelector('.ai-translator-copy');
+        if (!btn) return;
+        btn.innerHTML = CHECK_ICON_SVG;
         btn.classList.add('copied');
-        setTimeout(() => btn.classList.remove('copied'), 1500);
+        btn.title = '已复制';
+        setTimeout(() => {
+          if (btn && btn.isConnected) {
+            btn.innerHTML = COPY_ICON_SVG;
+            btn.classList.remove('copied');
+            btn.title = '复制结果';
+          }
+        }, 1500);
       });
     });
 
