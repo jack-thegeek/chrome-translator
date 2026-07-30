@@ -344,6 +344,51 @@
     });
     const cdef = Object.entries(cdefMap).map(([pos, defs]) => ({ pos, def: defs.join('；') }));
 
+    const edefList = [];
+    const homoContainers = doc.querySelectorAll('#clienthomoid, #homoid, .client_def_homo');
+    homoContainers.forEach(container => {
+      const bars = container.querySelectorAll('.client_def_bar, .client_def_homo_bar');
+      if (bars.length > 0) {
+        bars.forEach(bar => {
+          const posEl = bar.querySelector('.client_def_title, .client_def_title_web');
+          const pos = posEl ? posEl.textContent.trim() : '';
+          const rawItems = [];
+          bar.querySelectorAll('.client_def_list_word_content, .client_def_list_word_bar, .client_def_homo_item').forEach(el => {
+            let txt = stripTags(el.innerHTML).trim();
+            if (txt) {
+              txt = txt.replace(/；\s*$/, '').trim();
+              rawItems.push(txt);
+            }
+          });
+          if (rawItems.length === 0) {
+            let txt = stripTags(bar.innerHTML).replace(pos, '').trim();
+            if (txt) rawItems.push(txt);
+          }
+          const items = rawItems.map((item, idx) => {
+            if (/^\d+[\.\s]/.test(item)) return item;
+            return `${idx + 1}. ${item}`;
+          });
+          if (items.length > 0) {
+            edefList.push({ pos, items });
+          }
+        });
+      } else {
+        const rawItems = [];
+        container.querySelectorAll('.client_def_list_word_content, .client_def_list_word_bar').forEach(el => {
+          let txt = stripTags(el.innerHTML).trim();
+          if (txt) rawItems.push(txt);
+        });
+        const items = rawItems.map((item, idx) => {
+          if (/^\d+[\.\s]/.test(item)) return item;
+          return `${idx + 1}. ${item}`;
+        });
+        if (items.length > 0) {
+          edefList.push({ pos: '', items });
+        }
+      }
+    });
+    const edef = edefList;
+
     const infs = [];
     doc.querySelectorAll('.client_word_change_word').forEach(el => {
       const label = (el.getAttribute('title') || '').trim();
@@ -363,7 +408,7 @@
       sentences.push({ en, chs, mp3 });
     });
 
-    return { type: 'lex', title: word, phsym, cdef, infs, sentences };
+    return { type: 'lex', title: word, phsym, cdef, edef, infs, sentences };
   }
 
   function translateWithBingDict(text) {
@@ -400,9 +445,30 @@
       const phonetics = (result.phsym || []).map(p =>
         `<span class="bing-phon"><span class="bing-phon-lang">${escapeHtml(p.lang)} ${escapeHtml(p.pron)}</span>${p.audio ? ` <button class="bing-audio" data-url="${escapeHtml(p.audio)}" title="播放">${speakerSvg}</button>` : ''}</span>`
       ).join('');
-      const defs = (result.cdef || []).map(d =>
+
+      const hasEdef = result.edef && result.edef.length > 0;
+      const cdefsHtml = (result.cdef || []).map(d =>
         `<div class="bing-def"><span class="bing-pos">${escapeHtml(d.pos)}</span><span class="bing-def-text">${escapeHtml(d.def)}</span></div>`
-      ).join('');
+      ).join('') || '<div class="bing-no-def">暂无中释</div>';
+
+      const edefsHtml = hasEdef
+        ? (result.edef || []).map(d =>
+            `<div class="bing-def bing-edef-group">
+              ${d.pos ? `<span class="bing-pos">${escapeHtml(d.pos)}</span>` : ''}
+              <div class="bing-edef-list">
+                ${d.items.map(item => `<div class="bing-edef-item">${escapeHtml(item)}</div>`).join('')}
+              </div>
+            </div>`
+          ).join('')
+        : '<div class="bing-no-def">暂无英英释义</div>';
+
+      const tabsHtml = `
+        <div class="bing-tabs">
+          <button class="bing-tab active" data-tab="cdef">简明中释</button>
+          <button class="bing-tab" data-tab="edef">英英释义${hasEdef ? '' : ' (暂无)'}</button>
+        </div>
+      `;
+
       const infs = result.infs && result.infs.length
         ? `<div class="bing-infs"><span class="bing-infs-label">变形:</span> ${result.infs.map(i => `<span class="bing-inf">${escapeHtml(i.label)}: ${escapeHtml(i.form)}</span>`).join(' · ')}</div>`
         : '';
@@ -419,7 +485,9 @@
             <span class="bing-title">${escapeHtml(result.title || word)}</span>
             ${phonetics ? `<div class="bing-phonetics">${phonetics}</div>` : ''}
           </div>
-          ${defs ? `<div class="bing-defs">${defs}</div>` : ''}
+          ${tabsHtml}
+          <div class="bing-defs bing-tab-cdef">${cdefsHtml}</div>
+          <div class="bing-defs bing-tab-edef" style="display:none;">${edefsHtml}</div>
           ${infs}
           ${sentences ? `<div class="bing-sentences">${sentences}</div>` : ''}
           <div class="bing-footer">
@@ -435,6 +503,26 @@
       ).join('');
       resultEl.innerHTML = `<div class="bing-result"><div class="bing-head"><span class="bing-title">未找到「${escapeHtml(word)}」</span></div>${defs}<div class="bing-footer"><button class="bing-ai-fallback">改用 AI 翻译</button></div></div>`;
     }
+
+    // 绑定选项卡切换
+    resultEl.querySelectorAll('.bing-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        resultEl.querySelectorAll('.bing-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const cdefEl = resultEl.querySelector('.bing-tab-cdef');
+        const edefEl = resultEl.querySelector('.bing-tab-edef');
+        if (tab === 'cdef') {
+          if (cdefEl) cdefEl.style.display = 'block';
+          if (edefEl) edefEl.style.display = 'none';
+        } else if (tab === 'edef') {
+          if (cdefEl) cdefEl.style.display = 'none';
+          if (edefEl) edefEl.style.display = 'block';
+        }
+        requestAnimationFrame(() => positionPopup());
+      });
+    });
 
     // 绑定音频播放
     resultEl.querySelectorAll('.bing-audio').forEach(btn => {
