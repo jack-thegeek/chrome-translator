@@ -112,10 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 更新触发器
     const activeConfig = configs.find(c => c.id === activeConfigId);
     if (activeConfig) {
-      const isSys = activeConfig.isSystem || activeConfig.id === SYSTEM_GOOGLE_ID;
-      dropdownName.innerHTML = isSys
-        ? `${escapeHtml(activeConfig.name)} <span class="config-system-badge">内置</span>`
-        : escapeHtml(activeConfig.name);
+      dropdownName.textContent = activeConfig.name;
     }
 
     // 渲染列表
@@ -124,11 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = document.createElement('div');
       item.className = 'config-dropdown-item' + (config.id === activeConfigId ? ' active' : '');
       item.dataset.id = config.id;
-      const isSys = config.isSystem || config.id === SYSTEM_GOOGLE_ID;
-      const systemBadge = isSys ? ` <span class="config-system-badge">内置</span>` : '';
       item.innerHTML = `
         <div class="config-dropdown-item-label">
-          <div class="config-dropdown-item-name">${escapeHtml(config.name)}${systemBadge}</div>
+          <div class="config-dropdown-item-name">${escapeHtml(config.name)}</div>
         </div>
         <svg class="config-dropdown-item-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="20 6 9 17 4 12"></polyline>
@@ -283,8 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isSys) {
       baseUrlInput.placeholder = 'https://translate.googleapis.com';
-      apiKeyInput.placeholder = '(系统内置，无需 Key)';
-      modelInput.placeholder = '(系统内置)';
+      apiKeyInput.placeholder = '(无需 API Key)';
+      modelInput.placeholder = '(无需指定模型)';
     } else if (selectedProvider === 'claude') {
       baseUrlInput.placeholder = 'https://api.anthropic.com/v1';
       apiKeyInput.placeholder = 'sk-ant-...';
@@ -409,9 +404,9 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedProvider = isSys ? 'google' : (config.provider || 'openai');
 
     langValue.textContent = selectedLang;
-    providerValue.textContent = isSys ? 'Google 翻译 (内置引擎)' : (providers.find(p => p.value === selectedProvider)?.label || 'OpenAI 兼容');
+    providerValue.textContent = isSys ? 'Google 翻译' : (providers.find(p => p.value === selectedProvider)?.label || 'OpenAI 兼容');
 
-    // 系统内置配置锁定核心字段，仅允许切换目标语言
+    // 固定配置锁定核心字段，仅允许切换目标语言
     configNameInput.disabled = isSys;
     baseUrlInput.disabled = isSys;
     apiKeyInput.disabled = isSys;
@@ -669,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!config) return;
 
     if (config.isSystem || config.id === SYSTEM_GOOGLE_ID) {
-      showStatus('系统内置预设不可删除', 'error');
+      showStatus('固定预设配置不可删除', 'error');
       return;
     }
 
