@@ -420,29 +420,53 @@
     return { type: 'lex', title: word, phsym, cdef, edef, infs, sentences };
   }
 
+  // 检查插件上下文是否有效
+  function isExtensionValid() {
+    try {
+      return Boolean(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+    } catch (e) {
+      return false;
+    }
+  }
+
   function translateWithBingDict(text, popupEl, range) {
     showLoading('必应词典查询中...', popupEl);
-    chrome.runtime.sendMessage({
-      type: 'bingDict',
-      text: text
-    }, (response) => {
-      if (!popupEl || !popupEl.isConnected) return;
-      if (chrome.runtime.lastError) {
-        showLoading('词典查询失败，切换 AI 翻译...', popupEl);
-        translateWithAI(text, popupEl, range);
-        return;
-      }
-      if (!response.success || !response.html) {
-        translateWithAI(text, popupEl, range);
-        return;
-      }
-      const result = parseBingDictHtml(response.html);
-      if (!result) {
-        translateWithAI(text, popupEl, range);
-        return;
-      }
-      showBingDictResult(result, text, popupEl, range);
-    });
+    if (!isExtensionValid()) {
+      showError('插件已被重载，请刷新当前网页以重新加载', popupEl);
+      return;
+    }
+    try {
+      chrome.runtime.sendMessage({
+        type: 'bingDict',
+        text: text
+      }, (response) => {
+        if (!popupEl || !popupEl.isConnected) return;
+        let lastError = null;
+        try {
+          lastError = chrome.runtime?.lastError;
+        } catch (e) {
+          showError('插件上下文失效，请刷新当前网页', popupEl);
+          return;
+        }
+        if (lastError) {
+          showLoading('词典查询失败，切换 AI 翻译...', popupEl);
+          translateWithAI(text, popupEl, range);
+          return;
+        }
+        if (!response || !response.success || !response.html) {
+          translateWithAI(text, popupEl, range);
+          return;
+        }
+        const result = parseBingDictHtml(response.html);
+        if (!result) {
+          translateWithAI(text, popupEl, range);
+          return;
+        }
+        showBingDictResult(result, text, popupEl, range);
+      });
+    } catch (e) {
+      showError('插件上下文失效，请刷新当前网页以继续使用', popupEl);
+    }
   }
 
   // 渲染必应词典结果
@@ -559,80 +583,105 @@
 
   // AI 翻译请求（自动回退）
   function translateWithAI(text, popupEl, range) {
-    chrome.storage.local.get(['translatorConfigs', 'activeConfigId'], (result) => {
-      if (!popupEl || !popupEl.isConnected) return;
-      const configs = result.translatorConfigs || [];
-      const activeConfigId = result.activeConfigId;
-
-      if (configs.length === 0) {
-        showError('没有可用的翻译配置', popupEl);
-        return;
-      }
-
-      // 构建尝试顺序：优先当前配置，然后按顺序尝试其他
-      const activeIndex = configs.findIndex(c => c.id === activeConfigId);
-      const tryOrder = [...configs];
-      if (activeIndex > 0) {
-        // 把 activeConfig 移到第一位
-        const [active] = tryOrder.splice(activeIndex, 1);
-        tryOrder.unshift(active);
-      }
-
-      // 过滤掉没有 apiKey 的配置
-      const validConfigs = tryOrder.filter(c => c.apiKey);
-
-      if (validConfigs.length === 0) {
-        showError('请先在插件设置中配置 API Key', popupEl);
-        return;
-      }
-
-      // 尝试请求，失败自动回退
-      let attemptIndex = 0;
-      const errors = [];
-
-      function tryNext() {
+    if (!isExtensionValid()) {
+      showError('插件已被重载，请刷新当前网页以重新加载', popupEl);
+      return;
+    }
+    try {
+      chrome.storage.local.get(['translatorConfigs', 'activeConfigId'], (result) => {
         if (!popupEl || !popupEl.isConnected) return;
-        if (attemptIndex >= validConfigs.length) {
-          // 所有配置都失败，显示详细错误
-          const detail = errors.map(e => `• ${e.name}: ${e.error}`).join('\n');
-          showError(`所有配置请求失败\n${detail}`, popupEl);
+        const configs = result ? (result.translatorConfigs || []) : [];
+        const activeConfigId = result ? result.activeConfigId : null;
+
+        if (configs.length === 0) {
+          showError('没有可用的翻译配置', popupEl);
           return;
         }
 
-        const config = validConfigs[attemptIndex];
-        const isFallback = attemptIndex > 0;
-
-        if (isFallback) {
-          showLoading(`「${validConfigs[attemptIndex - 1].name}」失败，正在尝试「${config.name}」...`, popupEl);
+        // 构建尝试顺序：优先当前配置，然后按顺序尝试其他
+        const activeIndex = configs.findIndex(c => c.id === activeConfigId);
+        const tryOrder = [...configs];
+        if (activeIndex > 0) {
+          // 把 activeConfig 移到第一位
+          const [active] = tryOrder.splice(activeIndex, 1);
+          tryOrder.unshift(active);
         }
 
-        chrome.runtime.sendMessage({
-          type: 'translate',
-          text: text,
-          config: config
-        }, (response) => {
+        // 过滤掉没有 apiKey 的配置
+        const validConfigs = tryOrder.filter(c => c.apiKey);
+
+        if (validConfigs.length === 0) {
+          showError('请先在插件设置中配置 API Key', popupEl);
+          return;
+        }
+
+        // 尝试请求，失败自动回退
+        let attemptIndex = 0;
+        const errors = [];
+
+        function tryNext() {
           if (!popupEl || !popupEl.isConnected) return;
-          if (chrome.runtime.lastError) {
-            // 网络错误，尝试下一个
-            errors.push({ name: config.name, error: chrome.runtime.lastError.message });
-            attemptIndex++;
-            tryNext();
+          if (attemptIndex >= validConfigs.length) {
+            // 所有配置都失败，显示详细错误
+            const detail = errors.map(e => `• ${e.name}: ${e.error}`).join('\n');
+            showError(`所有配置请求失败\n${detail}`, popupEl);
             return;
           }
 
-          if (response.success) {
-            showResult(response.result, isFallback ? config.name : null, popupEl, range);
-          } else {
-            // API 错误，尝试下一个
-            errors.push({ name: config.name, error: response.error });
-            attemptIndex++;
-            tryNext();
-          }
-        });
-      }
+          const config = validConfigs[attemptIndex];
+          const isFallback = attemptIndex > 0;
 
-      tryNext();
-    });
+          if (isFallback) {
+            showLoading(`「${validConfigs[attemptIndex - 1].name}」失败，正在尝试「${config.name}」...`, popupEl);
+          }
+
+          if (!isExtensionValid()) {
+            showError('插件已被重载，请刷新当前网页以重新加载', popupEl);
+            return;
+          }
+
+          try {
+            chrome.runtime.sendMessage({
+              type: 'translate',
+              text: text,
+              config: config
+            }, (response) => {
+              if (!popupEl || !popupEl.isConnected) return;
+              let lastError = null;
+              try {
+                lastError = chrome.runtime?.lastError;
+              } catch (e) {
+                showError('插件上下文失效，请刷新当前网页', popupEl);
+                return;
+              }
+
+              if (lastError) {
+                // 网络错误，尝试下一个
+                errors.push({ name: config.name, error: lastError.message || 'Extension Context Invalidated' });
+                attemptIndex++;
+                tryNext();
+                return;
+              }
+
+              if (response && response.success) {
+                showResult(response.result, isFallback ? config.name : null, popupEl, range);
+              } else {
+                // API 错误，尝试下一个
+                errors.push({ name: config.name, error: response ? response.error : '请求失败' });
+                attemptIndex++;
+                tryNext();
+              }
+            });
+          } catch (e) {
+            showError('插件上下文失效，请刷新当前网页', popupEl);
+          }
+        }
+
+        tryNext();
+      });
+    } catch (e) {
+      showError('插件上下文失效，请刷新当前网页以继续使用', popupEl);
+    }
   }
 
   // 显示翻译结果
