@@ -229,6 +229,8 @@
   document.addEventListener('mousemove', (e) => {
     if (!activeDragPopup) return;
 
+    activeDragPopup.dataset.isDragged = 'true';
+
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
 
@@ -256,6 +258,9 @@
   // 定位弹窗
   function positionPopup(popupEl, range) {
     if (!popupEl || !popupEl.isConnected) return;
+
+    // 如果用户手动拖拽过该弹窗，保持用户拖拽后的位置，不再重置
+    if (popupEl.dataset.isDragged === 'true') return;
 
     const targetRange = range || lastSelectionRange;
     if (!targetRange) return;
