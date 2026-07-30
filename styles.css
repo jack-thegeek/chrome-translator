@@ -391,6 +391,10 @@
 .ai-translator-popup .bing-defs {
   margin-bottom: 8px;
 }
+.ai-translator-popup .bing-tab-edef {
+  max-height: 400px;
+  overflow-y: auto;
+}
 .ai-translator-popup .bing-def {
   display: flex;
   gap: 8px;
