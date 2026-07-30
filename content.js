@@ -153,7 +153,7 @@
             btn.classList.remove('copied');
             btn.title = '复制结果';
           }
-        }, 1500);
+        }, 600);
       });
     });
 
