@@ -303,22 +303,26 @@
 }
 #ai-translator-popup .bing-audio {
   border: none;
-  background: #3b82f6;
-  color: #fff;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  background: transparent;
+  color: #3b82f6;
   cursor: pointer;
-  font-size: 10px;
-  line-height: 20px;
-  display: inline-block;
-  text-align: center;
-  vertical-align: middle;
   padding: 0;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: inherit;
   flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 #ai-translator-popup .bing-audio:hover {
-  background: #2563eb;
+  color: #1d4ed8;
+  background: transparent;
+}
+#ai-translator-popup .bing-audio svg {
+  display: inline-block;
+  vertical-align: middle;
 }
 #ai-translator-popup .bing-defs {
   margin-bottom: 8px;
@@ -354,6 +358,8 @@
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed #e5e7eb;
+  max-height: 200px;
+  overflow-y: auto;
 }
 #ai-translator-popup .bing-sentence {
   padding: 6px 0;
@@ -362,9 +368,7 @@
 #ai-translator-popup .bing-sen-en {
   color: #1f2937;
   margin-bottom: 2px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  line-height: 1.4;
 }
 #ai-translator-popup .bing-sen-cn {
   color: #6b7280;

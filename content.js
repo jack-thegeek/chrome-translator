@@ -199,28 +199,48 @@
   function positionPopup(range) {
     if (!popup) return;
 
-    const rect = range.getBoundingClientRect();
+    const targetRange = range || lastSelectionRange;
+    if (!targetRange) return;
+
+    const rect = targetRange.getBoundingClientRect();
     const scrollX = window.scrollX || window.pageXOffset;
     const scrollY = window.scrollY || window.pageYOffset;
 
-    const popupWidth = 380;
-    const popupHeight = 200;
-    const margin = 10;
+    const margin = 12;
+    const popupWidth = popup.offsetWidth || 380;
+    const popupHeight = popup.offsetHeight || 250;
 
-    let left = rect.left + scrollX + (rect.width / 2) - (popupWidth / 2);
-    let top = rect.bottom + scrollY + margin;
+    // 默认优先定位在选区右侧（与选区顶部齐平）
+    let left = rect.right + scrollX + 10;
+    let top = rect.top + scrollY - 4;
 
-    // 边界检测
-    if (left < scrollX + margin) left = scrollX + margin;
+    // 边界检测：如果选区右侧放置会超出屏幕右边缘
     if (left + popupWidth > scrollX + window.innerWidth - margin) {
+      // 贴合屏幕右侧边距
       left = scrollX + window.innerWidth - popupWidth - margin;
-    }
-    if (top + popupHeight > scrollY + window.innerHeight - margin) {
-      top = rect.top + scrollY - popupHeight - margin;
+
+      // 若选区较短（比如单词或短句）且选区左侧空间足够，则尝试放在选区左侧
+      if (rect.left + scrollX > popupWidth + margin * 2 && (rect.right - rect.left) < 300) {
+        left = rect.left + scrollX - popupWidth - 10;
+      }
     }
 
-    popup.style.left = left + 'px';
-    popup.style.top = top + 'px';
+    // 确保左侧不超出屏幕
+    if (left < scrollX + margin) {
+      left = scrollX + margin;
+    }
+
+    // 垂直边界检测：避免底部超出屏幕
+    if (top + popupHeight > scrollY + window.innerHeight - margin) {
+      top = scrollY + window.innerHeight - popupHeight - margin;
+    }
+    // 确保顶部不超出屏幕
+    if (top < scrollY + margin) {
+      top = scrollY + margin;
+    }
+
+    popup.style.left = Math.round(left) + 'px';
+    popup.style.top = Math.round(top) + 'px';
   }
 
   // 隐藏弹窗
@@ -366,8 +386,9 @@
     const resultEl = popup.querySelector('.ai-translator-result');
 
     if (result.type === 'lex') {
+      const speakerSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
       const phonetics = (result.phsym || []).map(p =>
-        `<span class="bing-phon"><span class="bing-phon-lang">${escapeHtml(p.lang)} ${escapeHtml(p.pron)}</span>${p.audio ? `<button class="bing-audio" data-url="${escapeHtml(p.audio)}" title="播放">▶</button>` : ''}</span>`
+        `<span class="bing-phon"><span class="bing-phon-lang">${escapeHtml(p.lang)} ${escapeHtml(p.pron)}</span>${p.audio ? ` <button class="bing-audio" data-url="${escapeHtml(p.audio)}" title="播放">${speakerSvg}</button>` : ''}</span>`
       ).join('');
       const defs = (result.cdef || []).map(d =>
         `<div class="bing-def"><span class="bing-pos">${escapeHtml(d.pos)}</span><span class="bing-def-text">${escapeHtml(d.def)}</span></div>`
@@ -375,9 +396,9 @@
       const infs = result.infs && result.infs.length
         ? `<div class="bing-infs"><span class="bing-infs-label">变形:</span> ${result.infs.map(i => `<span class="bing-inf">${escapeHtml(i.label)}: ${escapeHtml(i.form)}</span>`).join(' · ')}</div>`
         : '';
-      const sentences = (result.sentences || []).slice(0, 2).map(s =>
+      const sentences = (result.sentences || []).map(s =>
         `<div class="bing-sentence">
-          <div class="bing-sen-en">${escapeHtml(s.en)}${s.mp3 ? `<button class="bing-audio" data-url="${escapeHtml(s.mp3)}" title="播放">▶</button>` : ''}</div>
+          <div class="bing-sen-en">${escapeHtml(s.en)}${s.mp3 ? ` <button class="bing-audio" data-url="${escapeHtml(s.mp3)}" title="播放">${speakerSvg}</button>` : ''}</div>
           <div class="bing-sen-cn">${escapeHtml(s.chs)}</div>
         </div>`
       ).join('');
@@ -423,6 +444,9 @@
         translateWithAI(word);
       });
     }
+
+    // 内容渲染后重新计算位置以适配实际高度
+    requestAnimationFrame(() => positionPopup());
   }
 
   // AI 翻译请求（自动回退）
@@ -509,6 +533,7 @@
       ? `<div class="ai-translator-fallback-badge">由「${escapeHtml(fallbackName)}」翻译</div>`
       : '';
     resultEl.innerHTML = `${fallbackBadge}<div class="ai-translator-text">${escapeHtml(result)}</div>`;
+    requestAnimationFrame(() => positionPopup());
   }
 
   // 更新加载状态
