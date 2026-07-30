@@ -274,8 +274,8 @@
   }
 
   .ai-translator-popup mark.bing-hl {
-    background: rgba(234, 179, 8, 0.25);
-    color: #fde047;
+    background: transparent;
+    color: #60a5fa;
   }
 
 
@@ -461,10 +461,8 @@
   line-height: 1.4;
 }
 .ai-translator-popup mark.bing-hl {
-  background: #fef08a;
-  color: #854d0e;
-  padding: 0 2px;
-  border-radius: 3px;
+  background: transparent;
+  color: #2563eb;
   font-weight: 600;
 }
 .ai-translator-popup .bing-sen-cn {
