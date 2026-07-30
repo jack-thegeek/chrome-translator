@@ -326,6 +326,8 @@
 #ai-translator-popup .bing-audio svg {
   display: inline-block;
   vertical-align: middle;
+  width: 16px;
+  height: 16px;
 }
 #ai-translator-popup .bing-defs {
   margin-bottom: 8px;
