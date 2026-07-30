@@ -339,7 +339,10 @@
       const txt = pn.textContent.trim();
       const langM = txt.match(/^(?:美国|英国|美|英)/);
       const ipaM = txt.match(/(\[[^\]]+\])/);
-      phsym.push({ lang: langM ? langM[0] : '', pron: ipaM ? ipaM[1] : '', audio: pron });
+      let lang = langM ? langM[0] : '';
+      if (lang === '美国') lang = '美';
+      if (lang === '英国') lang = '英';
+      phsym.push({ lang, pron: ipaM ? ipaM[1] : '', audio: pron });
     });
 
     const cdefMap = {};
