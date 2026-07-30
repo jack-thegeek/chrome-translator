@@ -62,6 +62,7 @@
   line-height: 1.6;
   color: #1a1a1a;
   overflow: hidden;
+  overscroll-behavior: contain;
   opacity: 0;
   transform: translateY(-8px) scale(0.96);
   animation: ai-translator-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;

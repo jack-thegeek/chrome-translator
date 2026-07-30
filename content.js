@@ -172,6 +172,38 @@
     const header = popupEl.querySelector('.ai-translator-header');
     header.addEventListener('mousedown', (e) => startDrag(e, popupEl));
 
+    // 鼠标在弹窗内时，禁用外部网页页面滚动
+    popupEl.addEventListener('wheel', (e) => {
+      e.stopPropagation();
+
+      let target = e.target;
+      let scrollableContainer = null;
+
+      while (target && target !== popupEl) {
+        const overflowY = window.getComputedStyle(target).overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && target.scrollHeight > target.clientHeight) {
+          scrollableContainer = target;
+          break;
+        }
+        target = target.parentElement;
+      }
+
+      if (scrollableContainer) {
+        const scrollTop = scrollableContainer.scrollTop;
+        const scrollHeight = scrollableContainer.scrollHeight;
+        const clientHeight = scrollableContainer.clientHeight;
+        const delta = e.deltaY;
+
+        // 在可滚动区域顶部向上滚、或底部向下滚时，阻止穿透滚动外部网页
+        if ((delta < 0 && scrollTop <= 0) || (delta > 0 && scrollTop + clientHeight >= scrollHeight - 1)) {
+          e.preventDefault();
+        }
+      } else {
+        // 弹窗非滚动区，禁用网页默认滚动
+        e.preventDefault();
+      }
+    }, { passive: false });
+
     return popupEl;
   }
 
