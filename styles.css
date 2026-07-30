@@ -95,7 +95,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   cursor: grab;
@@ -108,8 +108,9 @@
 
 .ai-translator-title {
   font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  line-height: 1;
 }
 
 .ai-translator-actions {
@@ -121,11 +122,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border: none;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
+  border-radius: 4px;
   color: white;
   cursor: pointer;
   transition: all 0.2s;
