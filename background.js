@@ -44,7 +44,7 @@ async function translateText(text, config) {
   const { apiKey, baseUrl, model, targetLang } = config;
   // 自动检测协议：优先使用 provider，否则根据 baseUrl 推断
   const provider = config.provider || (baseUrl.includes('google') ? 'google' : (baseUrl.includes('anthropic') ? 'claude' : 'openai'));
-  const systemPrompt = `你是一个专业的翻译助手。请将用户输入的文本翻译成${targetLang || '中文'}。只返回翻译结果，不要解释。如果是句子，请保持语句通顺自然。`;
+  const systemPrompt = `你是一个专业的翻译助手。请将用户输入的文本翻译成${targetLang || '中文'}。只返回翻译结果，不要解释。如果原文包含多段或换行，请严格保留与原文一致的换行与段落结构。`;
 
   if (provider === 'google') {
     return translateWithGoogle(text, config);

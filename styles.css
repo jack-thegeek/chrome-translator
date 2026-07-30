@@ -156,6 +156,7 @@
   word-wrap: break-word;
   word-break: break-word;
   line-height: 1.7;
+  white-space: pre-wrap;
 }
 
 .ai-translator-loading {
