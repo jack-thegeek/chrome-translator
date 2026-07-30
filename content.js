@@ -54,6 +54,12 @@
 
       // 开始翻译
       translate(textToTranslate, popupEl, targetRange);
+
+      // 取消网页文字高亮选择
+      try {
+        const sel = window.getSelection();
+        if (sel) sel.removeAllRanges();
+      } catch (err) {}
     });
 
     return triggerBtn;
